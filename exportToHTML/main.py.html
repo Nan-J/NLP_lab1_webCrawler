@@ -1,0 +1,99 @@
+<html>
+<head>
+<title>main.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #cc7832;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #6a8759;}
+.s3 { color: #808080;}
+.s4 { color: #6897bb;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+main.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">requests</span>
+<span class="s0">from </span><span class="s1">bs4 </span><span class="s0">import </span><span class="s1">BeautifulSoup</span>
+
+
+<span class="s0">def </span><span class="s1">getHtmlText(url):</span>
+    <span class="s0">try</span><span class="s1">:</span>
+        <span class="s1">kv = {</span><span class="s2">'user-agent'</span><span class="s1">: </span><span class="s2">&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) &quot;</span>
+                            <span class="s2">&quot;Chrome/80.0.3987.163 Safari/537.36&quot;</span><span class="s1">}  </span><span class="s3"># 修改头部信息，伪装成火狐访问</span>
+        <span class="s1">r = requests.get(url</span><span class="s0">, </span><span class="s1">headers=kv</span><span class="s0">, </span><span class="s1">timeout=</span><span class="s4">30</span><span class="s1">)</span>
+        <span class="s1">r.raise_for_status()  </span><span class="s3"># 如果状态不是200.则引发HTTPError异常</span>
+        <span class="s1">r.encoding = r.apparent_encoding</span>
+        <span class="s0">return </span><span class="s1">r.text</span>
+    <span class="s0">except</span><span class="s1">:</span>
+        <span class="s1">print(</span><span class="s2">&quot;爬取失败&quot;</span><span class="s1">)</span>
+        <span class="s0">return </span><span class="s2">&quot;&quot;</span>
+
+
+<span class="s0">def </span><span class="s1">fillInList(reviews_all</span><span class="s0">, </span><span class="s1">html):</span>
+    <span class="s1">num = </span><span class="s4">1</span>
+    <span class="s1">soup = BeautifulSoup(html</span><span class="s0">, </span><span class="s2">&quot;html.parser&quot;</span><span class="s1">)  </span><span class="s3"># 得到一个BeautifulSoup的对象(标准的缩进格式)</span>
+    <span class="s3"># 获取评论元素-观察html发现评论内容div的class值为“lister-item-content”</span>
+    <span class="s1">ct = soup.select(</span><span class="s2">'div[class=&quot;lister-item-content&quot;]'</span><span class="s1">)</span>
+    <span class="s3"># 遍历解析出的所有div，获取内容</span>
+    <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(len(ct)):</span>
+        <span class="s3"># 获取评论标题</span>
+        <span class="s1">title = ct[i].select(</span><span class="s2">'a[class=&quot;title&quot;]'</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].get_text()</span>
+        <span class="s3"># 获取评论正文</span>
+        <span class="s1">review = ct[i].select(</span><span class="s2">'div[class=&quot;text show-more__control&quot;]'</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].get_text()</span>
+        <span class="s3"># 获取评论分数</span>
+        <span class="s1">rate = ct[i].select(</span><span class="s2">'span[class=&quot;rating-other-user-rating&quot;]'</span><span class="s1">)</span>
+        <span class="s3"># 部分评论没有给分，因此需要判断是否存在打分。若存在，则获取rate值，否则rate=None</span>
+        <span class="s0">if </span><span class="s1">len(rate) &lt; </span><span class="s4">1</span><span class="s1">:</span>
+            <span class="s1">rate = </span><span class="s0">None</span>
+        <span class="s0">else</span><span class="s1">:</span>
+            <span class="s1">rate = rate[</span><span class="s4">0</span><span class="s1">].select(</span><span class="s2">&quot;span&quot;</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].get_text()</span>
+        <span class="s3"># 将获取的评论添加到reviews_all列表中</span>
+        <span class="s1">reviews_all.append({</span><span class="s2">&quot;title&quot;</span><span class="s1">: title</span><span class="s0">, </span><span class="s2">&quot;review&quot;</span><span class="s1">: review</span><span class="s0">, </span><span class="s2">&quot;rate&quot;</span><span class="s1">: rate})</span>
+    <span class="s1">print(</span><span class="s2">&quot;共获取了&quot; </span><span class="s1">+ str(len(reviews_all)) + </span><span class="s2">&quot;条评论&quot;</span><span class="s1">)</span>
+    <span class="s3"># 结果写进review.txt</span>
+    <span class="s1">file = open(</span><span class="s2">&quot;reviews//reviews&quot; </span><span class="s1">+ str(num) + </span><span class="s2">&quot;.txt&quot;</span><span class="s0">, </span><span class="s2">&quot;a&quot;</span><span class="s0">, </span><span class="s1">encoding=</span><span class="s2">&quot;utf8&quot;</span><span class="s1">)</span>
+    <span class="s0">for </span><span class="s1">each </span><span class="s0">in </span><span class="s1">reviews_all:</span>
+        <span class="s1">file.write(str(each))</span>
+    <span class="s1">file.close()</span>
+    <span class="s1">reviews_all.clear()</span>
+    <span class="s3"># 如果页面没有load-more按钮，说明数据全部加载显示，退出循环</span>
+    <span class="s0">while True</span><span class="s1">:</span>
+        <span class="s0">if </span><span class="s1">len(soup.select(</span><span class="s2">&quot;.load-more-data&quot;</span><span class="s1">)) &lt; </span><span class="s4">1</span><span class="s1">:</span>
+            <span class="s0">break</span>
+        <span class="s3"># 获取paginationKey参数，用于发送请求更多数据</span>
+        <span class="s1">paginationKey = soup.select(</span><span class="s2">&quot;.load-more-data&quot;</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].attrs[</span><span class="s2">&quot;data-key&quot;</span><span class="s1">]</span>
+        <span class="s1">html_new = getHtmlText(</span>
+            <span class="s2">&quot;https://www.imdb.com/title/tt0111161/reviews/_ajax?ref_=undefined&amp;paginationKey=&quot; </span><span class="s1">+ paginationKey)</span>
+        <span class="s1">soup_new = BeautifulSoup(html_new</span><span class="s0">, </span><span class="s2">&quot;html.parser&quot;</span><span class="s1">)</span>
+        <span class="s1">ct_new = soup_new.select(</span><span class="s2">'div[class=&quot;lister-item-content&quot;]'</span><span class="s1">)</span>
+        <span class="s0">for </span><span class="s1">i </span><span class="s0">in </span><span class="s1">range(len(ct)):</span>
+            <span class="s1">title_new = ct_new[i].select(</span><span class="s2">'a[class=&quot;title&quot;]'</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].get_text()</span>
+            <span class="s1">review_new = ct_new[i].select(</span><span class="s2">'div[class=&quot;text show-more__control&quot;]'</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].get_text()</span>
+            <span class="s1">rate_new = ct_new[i].select(</span><span class="s2">'span[class=&quot;rating-other-user-rating&quot;]'</span><span class="s1">)</span>
+            <span class="s0">if </span><span class="s1">len(rate_new) &lt; </span><span class="s4">1</span><span class="s1">:</span>
+                <span class="s1">rate_new = </span><span class="s0">None</span>
+            <span class="s0">else</span><span class="s1">:</span>
+                <span class="s1">rate_new = rate_new[</span><span class="s4">0</span><span class="s1">].select(</span><span class="s2">&quot;span&quot;</span><span class="s1">)[</span><span class="s4">0</span><span class="s1">].get_text()</span>
+            <span class="s1">reviews_all.append({</span><span class="s2">&quot;title&quot;</span><span class="s1">: title_new</span><span class="s0">, </span><span class="s2">&quot;review&quot;</span><span class="s1">: review_new</span><span class="s0">, </span><span class="s2">&quot;rate&quot;</span><span class="s1">: rate_new})</span>
+            <span class="s1">print(</span><span class="s2">&quot;共获取了&quot; </span><span class="s1">+ str(len(reviews_all)) + </span><span class="s2">&quot;条评论&quot;</span><span class="s1">)</span>
+            <span class="s3"># 结果写进review.txt</span>
+            <span class="s1">num = num + </span><span class="s4">1</span>
+            <span class="s1">file = open(</span><span class="s2">&quot;reviews//reviews&quot; </span><span class="s1">+ str(num) + </span><span class="s2">&quot;.txt&quot;</span><span class="s0">, </span><span class="s2">&quot;a&quot;</span><span class="s0">, </span><span class="s1">encoding=</span><span class="s2">&quot;utf8&quot;</span><span class="s1">)</span>
+            <span class="s0">for </span><span class="s1">each </span><span class="s0">in </span><span class="s1">reviews_all:</span>
+                <span class="s1">file.write(str(each))</span>
+            <span class="s1">file.close()</span>
+            <span class="s1">reviews_all.clear()</span>
+
+
+<span class="s0">if </span><span class="s1">__name__ == </span><span class="s2">&quot;__main__&quot;</span><span class="s1">:</span>
+    <span class="s1">reviews_all = []  </span><span class="s3"># 新建列表变量reviews_all,用于存放所有评论</span>
+    <span class="s1">url = </span><span class="s2">&quot;https://www.imdb.com/title/tt0111161/reviews?ref_=tt_urv&quot;</span>
+    <span class="s1">html = getHtmlText(url)</span>
+    <span class="s1">fillInList(reviews_all</span><span class="s0">, </span><span class="s1">html)</span>
+</pre>
+</body>
+</html>
